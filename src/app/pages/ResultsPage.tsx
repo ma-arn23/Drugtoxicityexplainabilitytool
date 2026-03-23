@@ -1,3 +1,14 @@
+import type {
+  QueryInput,
+  ProToxPrediction,
+  ProToxResponse,
+  MechanismRecord,
+  EvidenceItem,
+  InterpretabilityRule,
+  MechanisticFlag,
+  ExplainabilityResult,
+} from '../types/explainability';
+import type { ResultsPageData } from '../types/explainability';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
@@ -24,8 +35,9 @@ import {
   FileText,
 } from 'lucide-react';
 
+
 // Mock data generator based on SMILES
-const generateMockResults = (smiles: string) => {
+const generateMockResults = (smiles: string): ResultsPageData => {
   return {
     smiles,
     toxicityClass: 'Moderate Risk',
