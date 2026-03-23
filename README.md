@@ -38,6 +38,13 @@ Planned integration includes:
 - **Tailwind CSS**
 - Figma-generated UI foundation, refined locally in code
 
+## Running the code
+
+Run `npm i` to install the dependencies.
+
+Run `npm run dev` to start the development server.
+Open the website via http://localhost:5174/
+
 ## Project structure
 
 ```text
@@ -53,10 +60,3 @@ src/
   App.tsx
   routes.ts
   main.tsx
-
-## Running the code
-
-Run `npm i` to install the dependencies.
-
-Run `npm run dev` to start the development server.
-Open the website via http://localhost:5174/
