@@ -194,20 +194,39 @@ const getSupportBadge = (status: string) => {
 export function ResultsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const smiles = searchParams.get('smiles') || '';
-  const [highlightedItems, setHighlightedItems] = useState<string[]>([]);
+  const [results, setResults] = useState<ResultsPageData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!smiles) {
-      navigate('/', { replace: true });
-    }
-  }, [smiles, navigate]);
-
   if (!smiles) {
-    return null;
+    navigate('/', { replace: true });
+    return;
   }
 
-  const results = generateMockResults(smiles);
+  const fetchResults = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/results?smiles=${encodeURIComponent(smiles)}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch results");
+      }
+
+      const data = await response.json();
+
+      setResults(data);
+    } catch (error) {
+      console.error("Error fetching results:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchResults();
+}, [smiles, navigate]);
+
+
 
   const handleRiskHover = (riskId: string, isHovering: boolean) => {
     const risk = results.mechanisticRisks.find((r) => r.id === riskId);
