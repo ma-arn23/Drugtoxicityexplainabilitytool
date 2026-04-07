@@ -1,13 +1,3 @@
-import type {
-  QueryInput,
-  ProToxPrediction,
-  ProToxResponse,
-  MechanismRecord,
-  EvidenceItem,
-  InterpretabilityRule,
-  MechanisticFlag,
-  ExplainabilityResult,
-} from '../types/explainability';
 import type { ResultsPageData } from '../types/explainability';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useState } from 'react';
@@ -35,93 +25,7 @@ import {
   FileText,
 } from 'lucide-react';
 
-
-// Mock data generator based on SMILES
-const generateMockResults = (smiles: string): ResultsPageData => {
-  return {
-    smiles,
-    toxicityClass: 'Moderate Risk',
-    overallScore: 0.62,
-    endpoints: [
-      { name: 'Cardiotoxicity', score: 0.71, risk: 'high' },
-      { name: 'Hepatotoxicity', score: 0.58, risk: 'moderate' },
-      { name: 'Nephrotoxicity', score: 0.34, risk: 'low' },
-      { name: 'Neurotoxicity', score: 0.45, risk: 'moderate' },
-    ],
-    mechanisticRisks: [
-      {
-        id: 'qt-risk',
-        type: 'QT Prolongation Risk',
-        severity: 'high',
-        description: 'hERG inhibition may delay cardiac repolarization.',
-        confidence: 0.87,
-        triggeredBy: ['hERG (KCNH2) inhibition', 'Cardiac ion channel disruption'],
-        supportStatus: 'strong',
-        relatedTargets: ['hERG (KCNH2)'],
-        relatedOffTargets: [],
-        relatedMechanisms: ['Ion channel blockade'],
-        relatedPathways: ['Cardiac action potential regulation'],
-      },
-      {
-        id: 'hepatic-risk',
-        type: 'Hepatic Metabolism Disruption',
-        severity: 'moderate',
-        description: 'CYP450 interaction may increase hepatotoxicity risk.',
-        confidence: 0.72,
-        triggeredBy: ['CYP3A4 substrate interaction', 'Hepatic enzyme modulation'],
-        supportStatus: 'moderate',
-        relatedTargets: ['CYP3A4'],
-        relatedOffTargets: [],
-        relatedMechanisms: ['Oxidative stress induction'],
-        relatedPathways: ['Hepatic drug metabolism'],
-      },
-      {
-        id: 'mito-risk',
-        type: 'Mitochondrial Dysfunction',
-        severity: 'moderate',
-        description: 'Mitochondrial stress may disrupt energy metabolism.',
-        confidence: 0.65,
-        triggeredBy: ['Oxidative phosphorylation disruption', 'Mitochondrial membrane interaction'],
-        supportStatus: 'emerging',
-        relatedTargets: [],
-        relatedOffTargets: [],
-        relatedMechanisms: ['Oxidative stress induction', 'Lipid metabolism interference'],
-        relatedPathways: ['Oxidative phosphorylation'],
-      },
-    ],
-    primaryTargets: [
-      { name: 'hERG (KCNH2)', interaction: 'Inhibitor', confidence: 0.89, provenance: 'curated' },
-      { name: 'CYP3A4', interaction: 'Substrate', confidence: 0.76, provenance: 'database' },
-      { name: 'P-glycoprotein', interaction: 'Substrate', confidence: 0.68, provenance: 'database' },
-    ],
-    offTargets: [
-      { name: 'Sodium channels (Nav1.5)', interaction: 'Weak blocker', confidence: 0.54, provenance: 'llm' },
-      { name: 'Dopamine D2 receptor', interaction: 'Antagonist', confidence: 0.48, provenance: 'llm' },
-    ],
-    mechanisms: [
-      { text: 'Ion channel blockade', provenance: 'curated' },
-      { text: 'Oxidative stress induction', provenance: 'database' },
-      { text: 'Protein binding disruption', provenance: 'llm' },
-      { text: 'Lipid metabolism interference', provenance: 'llm' },
-    ],
-    pathways: [
-      { text: 'Cardiac action potential regulation', provenance: 'curated' },
-      { text: 'Hepatic drug metabolism', provenance: 'database' },
-      { text: 'Oxidative phosphorylation', provenance: 'curated' },
-      { text: 'Xenobiotic clearance', provenance: 'database' },
-    ],
-    adverseEvents: [
-      { event: 'QT interval prolongation', frequency: 'Common', evidence: 'Strong', provenance: 'curated' },
-      { event: 'Elevated liver enzymes', frequency: 'Occasional', evidence: 'Moderate', provenance: 'database' },
-      { event: 'Cardiac arrhythmia', frequency: 'Rare', evidence: 'Strong', provenance: 'curated' },
-    ],
-    confidence: {
-      modelConfidence: 0.78,
-      mechanisticSupport: 0.82,
-      evidenceStrength: 0.85,
-    },
-  };
-};
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const getSeverityColor = (severity: string) => {
   switch (severity) {
@@ -194,39 +98,54 @@ const getSupportBadge = (status: string) => {
 export function ResultsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const smiles = searchParams.get('smiles') || '';
+
   const [results, setResults] = useState<ResultsPageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [highlightedItems, setHighlightedItems] = useState<string[]>([]);
 
   useEffect(() => {
-  if (!smiles) {
-    navigate('/', { replace: true });
-    return;
+    if (!smiles) {
+      navigate('/', { replace: true });
+      return;
+    }
+
+    setLoading(true);
+
+    const fetchResults = async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/results?smiles=${encodeURIComponent(smiles)}`
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API error response:', errorText);
+          throw new Error('Failed to fetch results');
+        }
+
+        const data: ResultsPageData = await response.json();
+        setResults(data);
+      } catch (error) {
+        console.error('Error fetching results:', error);
+        setResults(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
+  }, [smiles, navigate]);
+
+  if (!smiles) return null;
+
+  if (loading) {
+    return <div className="p-6">Loading analysis...</div>;
   }
 
-  const fetchResults = async () => {
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/results?smiles=${encodeURIComponent(smiles)}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch results");
-      }
-
-      const data = await response.json();
-
-      setResults(data);
-    } catch (error) {
-      console.error("Error fetching results:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchResults();
-}, [smiles, navigate]);
-
-
+  if (!results) {
+    return <div className="p-6">Failed to load results</div>;
+  }
 
   const handleRiskHover = (riskId: string, isHovering: boolean) => {
     const risk = results.mechanisticRisks.find((r) => r.id === riskId);
@@ -250,7 +169,6 @@ export function ResultsPage() {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-slate-50">
-        {/* Header */}
         <div className="bg-white border-b border-slate-200 sticky top-0 z-20">
           <div className="max-w-[1800px] mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
@@ -276,12 +194,9 @@ export function ResultsPage() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="max-w-[1800px] mx-auto px-6 py-6">
           <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6 items-start">
-            {/* LEFT COLUMN */}
             <div className="space-y-5">
-              {/* Prediction Summary */}
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -315,17 +230,15 @@ export function ResultsPage() {
                 </CardContent>
               </Card>
 
-              {/* Interpretation */}
               <Card className="border-green-200 bg-green-50">
                 <CardContent className="p-4">
                   <p className="text-sm text-green-900 leading-relaxed">
                     <span className="font-semibold">Interpretation:</span> Model predictions are supported by
-                    curated mechanistic evidence, especially for cardiac and hepatic risk.
+                    curated mechanistic evidence.
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Why toxic */}
               <Card className="border-2 border-blue-300 shadow-xl bg-gradient-to-br from-white to-blue-50/30">
                 <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100 border-b-2 border-blue-200 pb-4">
                   <CardTitle className="flex items-center gap-2 text-xl">
@@ -383,10 +296,7 @@ export function ResultsPage() {
                             </div>
 
                             <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 gap-3">
-                              <Badge
-                                variant="outline"
-                                className={`${supportBadge.color} text-xs gap-1`}
-                              >
+                              <Badge variant="outline" className={`${supportBadge.color} text-xs gap-1`}>
                                 <CheckCircle2 className="w-3 h-3" />
                                 {supportBadge.label}
                               </Badge>
@@ -425,7 +335,6 @@ export function ResultsPage() {
                 </CardContent>
               </Card>
 
-              {/* Confidence */}
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -510,9 +419,7 @@ export function ResultsPage() {
               </Card>
             </div>
 
-            {/* RIGHT COLUMN */}
             <div className="space-y-5 xl:sticky xl:top-24 self-start">
-              {/* Biological Targets */}
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -616,7 +523,6 @@ export function ResultsPage() {
                 </CardContent>
               </Card>
 
-              {/* Mechanisms & Pathways */}
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -704,7 +610,6 @@ export function ResultsPage() {
                 </CardContent>
               </Card>
 
-              {/* Known Adverse Events */}
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -718,10 +623,7 @@ export function ResultsPage() {
                     {results.adverseEvents.map((event, idx) => {
                       const provBadge = getProvenanceBadge(event.provenance);
                       return (
-                        <div
-                          key={idx}
-                          className="p-3 bg-purple-50 rounded-md border border-purple-200"
-                        >
+                        <div key={idx} className="p-3 bg-purple-50 rounded-md border border-purple-200">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <span className="text-sm font-semibold text-slate-900">{event.event}</span>
                             <div className="flex items-center gap-1.5 shrink-0">
