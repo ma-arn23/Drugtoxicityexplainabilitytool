@@ -1,107 +1,108 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
 import { FlaskConical, Info } from 'lucide-react';
 
-export function InputPage() {
-  const [smiles, setSmiles] = useState('');
-  const navigate = useNavigate();
+import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { Input } from '../components/ui/input';
 
-  const handleAnalyze = () => {
-    if (smiles.trim()) {
-      // Navigate to results page with SMILES string as URL parameter
-      navigate(`/results?smiles=${encodeURIComponent(smiles)}`);
-    }
+const exampleCompounds = [
+  {
+    name: 'Troglitazone',
+    smiles: 'CC(C)c1ccc(cc1)C(=O)Nc2cccc(c2)O',
+  },
+  {
+    name: 'Rofecoxib',
+    smiles: 'CS(=O)(=O)c1ccc(cc1)C2=C(C(=O)OC2)c3ccccc3',
+  },
+  {
+    name: 'Phenacetin',
+    smiles: 'CCOc1ccc(NC(C)=O)cc1',
+  },
+];
+
+export function InputPage() {
+  const navigate = useNavigate();
+  const [smiles, setSmiles] = useState('');
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    const trimmed = smiles.trim();
+    if (!trimmed) return;
+
+    navigate(`/results?smiles=${encodeURIComponent(trimmed)}`);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && smiles.trim()) {
-      handleAnalyze();
-    }
+  const handleExampleClick = (exampleSmiles: string) => {
+    setSmiles(exampleSmiles);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-blue-100 mb-4">
-            <FlaskConical className="w-7 h-7 text-blue-600" />
+    <div className="min-h-screen bg-slate-50 px-4 py-10">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-10 flex flex-col items-center text-center">
+          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-blue-100">
+            <FlaskConical className="h-12 w-12 text-blue-600" />
           </div>
-          <h1 className="text-3xl mb-2 text-slate-900">
+
+          <h1 className="mb-3 text-5xl font-semibold tracking-tight text-slate-900">
             Drug Toxicity Explainability Tool
           </h1>
-          <p className="text-slate-600">
+
+          <p className="max-w-3xl text-xl text-slate-600">
             Predict and understand potential drug toxicity with AI-powered molecular analysis
           </p>
         </div>
 
-        {/* Input Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="smiles" className="text-slate-700">
-                SMILES String
-              </Label>
-              <Input
-                id="smiles"
-                type="text"
-                placeholder="e.g., CC(C)Cc1ccc(cc1)C(C)C(O)=O"
-                value={smiles}
-                onChange={(e) => setSmiles(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="h-11 text-base"
-              />
-            </div>
-
-            <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-md border border-blue-100">
-              <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-700">
-                <span className="font-medium text-slate-900">About SMILES:</span> Simplified Molecular Input Line Entry System (SMILES) is a notation for describing molecular structures using ASCII strings.
+        <Card className="rounded-3xl border border-slate-200 shadow-sm">
+          <CardContent className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-3 font-semibold text-slate-800">SMILES String</label>
+                <Input
+                  value={smiles}
+                  onChange={(e) => setSmiles(e.target.value)}
+                  placeholder="e.g., CC(=O)Oc1ccccc1C(=O)O"
+                  className="h-16 rounded-2xl border-slate-200 bg-slate-100 text-lg"
+                />
               </div>
-            </div>
 
-            <Button
-              onClick={handleAnalyze}
-              disabled={!smiles.trim()}
-              className="w-full h-11"
-              size="lg"
-            >
-              Analyze Toxicity
-            </Button>
-          </div>
-        </div>
+              <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-5 text-left">
+                <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                <p className="text-base text-slate-700">
+                  <span className="font-semibold text-slate-900">About SMILES:</span>{' '}
+                  Simplified Molecular Input Line Entry System (SMILES) is a notation for
+                  describing molecular structures using ASCII strings.
+                </p>
+              </div>
 
-        {/* Example section */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-slate-500 mb-2">Try an example:</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSmiles('CC(C)Cc1ccc(cc1)C(C)C(O)=O')}
-              className="font-mono text-xs h-8"
-            >
-              Ibuprofen
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSmiles('CN1C=NC2=C1C(=O)N(C(=O)N2C)C')}
-              className="font-mono text-xs h-8"
-            >
-              Caffeine
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSmiles('CC(=O)Oc1ccccc1C(=O)O')}
-              className="font-mono text-xs h-8"
-            >
-              Aspirin
-            </Button>
+              <Button
+                type="submit"
+                className="h-16 w-full rounded-2xl bg-slate-500 text-lg font-semibold hover:bg-slate-600"
+                disabled={!smiles.trim()}
+              >
+                Analyze Toxicity
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="mt-10 text-center">
+          <p className="mb-4 text-lg text-slate-500">Try a supported example:</p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {exampleCompounds.map((compound) => (
+              <Button
+                key={compound.name}
+                type="button"
+                variant="outline"
+                className="rounded-2xl px-6 py-5 text-lg"
+                onClick={() => handleExampleClick(compound.smiles)}
+              >
+                {compound.name}
+              </Button>
+            ))}
           </div>
         </div>
       </div>
