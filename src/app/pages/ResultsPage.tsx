@@ -140,8 +140,33 @@ export function ResultsPage() {
   if (!smiles) return null;
 
   if (loading) {
-    return <div className="p-6">Loading analysis...</div>;
-  }
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+      <Card className="w-full max-w-md rounded-2xl border border-slate-200 shadow-sm">
+        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+          <div className="relative mb-5">
+            <div className="h-14 w-14 rounded-full border-4 border-slate-200" />
+            <div className="absolute inset-0 h-14 w-14 animate-spin rounded-full border-4 border-transparent border-t-blue-600" />
+          </div>
+
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+            Analyzing compound
+          </h2>
+
+          <p className="mt-2 text-sm text-slate-600">
+            Running toxicity analysis and preparing explainability results...(This may take a while)
+          </p>
+
+          <div className="mt-5 w-full max-w-xs">
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+              <div className="h-full w-1/3 animate-pulse rounded-full bg-blue-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
   if (!results) {
     return <div className="p-6">Failed to load results</div>;
